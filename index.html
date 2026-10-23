@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NS WORKING JOB</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>NS WORKING JOB</h1>
+    <p>Worker & Seller Task Platform — Starter Demo</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>ফোন নম্বর দিয়ে লগইন</h2>
+      <p class="note">দেশের কোডসহ নম্বর লিখুন, যেমন +8801XXXXXXXXX। Firebase Console-এ Phone Authentication চালু থাকতে হবে।</p>
+      <label for="phone">ফোন নম্বর</label>
+      <input id="phone" type="tel" placeholder="+8801XXXXXXXXX" autocomplete="tel">
+      <div id="recaptcha-container"></div>
+      <button id="send-code">OTP পাঠান</button>
+      <label for="otp">OTP কোড</label>
+      <input id="otp" inputmode="numeric" placeholder="SMS-এ পাওয়া কোড">
+      <button id="verify-code">OTP যাচাই করে লগইন</button>
+      <button id="logout" class="secondary hidden">লগআউট</button>
+      <p id="auth-status" role="status">লগইন করা হয়নি।</p>
+    </section>
+
+    <section id="profile-card" class="card hidden">
+      <h2>আপনার অ্যাকাউন্ট</h2>
+      <p id="user-info"></p>
+      <label for="role">অ্যাকাউন্টের ধরন</label>
+      <select id="role">
+        <option value="worker">Worker — কাজ করব</option>
+        <option value="seller">Seller — কাজ পোস্ট করব</option>
+      </select>
+      <button id="save-profile">অ্যাকাউন্টের ধরন সংরক্ষণ</button>
+      <p><strong>ডেমো ব্যালেন্স:</strong> ৳<span id="balance">0</span></p>
+      <p class="note">এটি শুধু ডেমো। ব্যালেন্স বা পেমেন্ট বাস্তবে পরিচালনা করে না।</p>
+    </section>
+
+    <section id="seller-card" class="card hidden">
+      <h2>নতুন কাজ পোস্ট (Seller)</h2>
+      <label for="task-title">কাজের নাম</label>
+      <input id="task-title" maxlength="80" placeholder="যেমন: একটি ছোট জরিপ">
+      <label for="task-description">কাজের বিবরণ</label>
+      <textarea id="task-description" maxlength="1000" placeholder="কী করতে হবে লিখুন"></textarea>
+      <label for="task-points">পয়েন্ট (শুধু ডেমো)</label>
+      <input id="task-points" type="number" min="1" max="10000" value="10">
+      <button id="post-task">কাজ পোস্ট করুন</button>
+      <p class="note">পোস্টের আগে কাজের বৈধতা ও পেমেন্টের শর্ত স্পষ্ট রাখুন।</p>
+    </section>
+
+    <section class="card">
+      <h2>উপলব্ধ কাজ</h2>
+      <div id="tasks"><p>কাজ লোড হচ্ছে…</p></div>
+    </section>
+
+    <section id="withdraw-card" class="card hidden">
+      <h2>টাকা তোলার অনুরোধ (ডেমো)</h2>
+      <p class="note">এই ফর্ম বাস্তবে টাকা পাঠায় না। প্রকৃত পেমেন্ট চালুর আগে নিরাপদ সার্ভার-সাইড যাচাই, নীতিমালা ও অনুমোদিত পেমেন্ট ব্যবস্থা লাগবে।</p>
+      <label for="withdraw-amount">পরিমাণ (৳)</label>
+      <input id="withdraw-amount" type="number" min="1" max="100000" placeholder="যেমন 250">
+      <label for="withdraw-method">পেমেন্ট মাধ্যম</label>
+      <select id="withdraw-method">
+        <option value="bKash">bKash</option>
+        <option value="Nagad">Nagad</option>
+      </select>
+      <label for="withdraw-number">নিজের পেমেন্ট নম্বর</label>
+      <input id="withdraw-number" type="tel" placeholder="01XXXXXXXXX" autocomplete="off">
+      <button id="request-withdraw">অনুরোধ জমা দিন</button>
+      <p id="withdraw-status" role="status"></p>
+    </section>
+  </main>
+
+  <footer><p>NS WORKING JOB • Prototype only</p></footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
