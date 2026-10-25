@@ -6,12 +6,7 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+ from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 // Firebase Console-এর Config-এর মান এখানে বসান
 const firebaseConfig = {
