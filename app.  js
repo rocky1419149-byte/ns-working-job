@@ -15,12 +15,12 @@ import {
 
 // Firebase Console-এর Config-এর মান এখানে বসান
 const firebaseConfig = {
-  apiKey: "আপনার_API_KEY",
+  apiKey: "AIzaSyBCVseWM_w34uv6iNFEz-hrLMFYX7NZsWQ",
   authDomain: "ns-working-job.firebaseapp.com",
   projectId: "ns-working-job",
-  storageBucket: "আপনার_STORAGE_BUCKET",
-  messagingSenderId: "আপনার_MESSAGING_SENDER_ID",
-  appId: "আপনার_APP_ID"
+  storageBucket: "ns-working-job.firebasestorage.app",
+  messagingSenderId: "342517995479",
+  appId: "1:342517995479:web:6afae5016ee9b8241e5d92"
 };
 
 const app = initializeApp(firebaseConfig);
