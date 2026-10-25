@@ -8,3 +8,5 @@ const firebaseConfig = {
   appId: "1:342517995479:web:6afae5016ee9b8241e5d92",
   measurementId: "G-F3NWJV815Z"
 };
+// NS WORKING JOB
+console.log("NS WORKING JOB app.js loaded");
