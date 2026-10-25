@@ -1,19 +1,347 @@
-// NS WORKING JOB — Firebase setup
-// Replace the example values with your Firebase Web App config.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
+// Firebase Console-এর Config-এর মান এখানে বসান
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyBCVseWM_w34uv6iNFEz-hrLMFYX7NZsWQ",
   authDomain: "ns-working-job.firebaseapp.com",
   projectId: "ns-working-job",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  storageBucket: "ns-working-job.firebasestorage.app",
+  messagingSenderId: "342517995479",
+  appId: "1:342517995479:web:6afae5016ee9b8241e5d92"
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+console.log("NS WORKING JOB app.js loaded");
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = (id) => document.getElementById(id);
+
+let confirmationResult = null;
+let recaptchaVerifier = null;
+
+function status(message) {
+  if ($("auth-status")) $("auth-status").textContent = message;
 }
 
-const auth = firebase.auth();
 
-console.log("NS WORKING JOB Firebase is ready.");
+async function setupRecaptcha() {
+  if (recaptchaVerifier) {
+    await recaptchaVerifier.clear();
+  }
+
+  recaptchaVerifier = new RecaptchaVerifier(
+    auth,
+    "recaptcha-container",
+    { size: "normal" }
+  );
+
+  await recaptchaVerifier.render();
+  return recaptchaVerifier;
+}
+// OTP পাঠানো
+$("send-code")?.addEventListener("click", async () => {
+  try {
+    const raw = $("phone")?.value.trim() || "";
+    let phone = raw.replace(/[\s()-]/g, "");
+
+    if (/^01\d{9}$/.test(phone)) phone = "+88" + phone;
+    if (!/^\+\d{10,15}$/.test(phone)) {
+      status("সঠিক ফোন নম্বর দিন। বাংলাদেশের নম্বর হলে 01 দিয়ে লিখুন।");
+      return;
+    }
+
+    status("reCAPTCHA যাচাই করুন...");
+    confirmationResult = await signInWithPhoneNumber(
+      auth,
+      phone,
+      await setupRecaptcha()
+    );
+
+    status("OTP পাঠানো হয়েছে। SMS-এর কোড লিখুন।");
+  } catch (error) {
+    console.error(error);
+    status("OTP পাঠানো যায়নি: " + error.message);
+    if (recaptchaVerifier) {
+      try { await recaptchaVerifier.clear(); } catch (_) {}
+      recaptchaVerifier = null;
+    }
+  }
+});
+
+// OTP যাচাই
+$("verify-code")?.addEventListener("click", async () => {
+  try {
+    if (!confirmationResult) {
+      status("আগে OTP পাঠান।");
+      return;
+    }
+
+    const code = $("otp")?.value.trim() || "";
+    if (!code) {
+      status("SMS-এ পাওয়া OTP লিখুন।");
+      return;
+    }
+
+    await confirmationResult.confirm(code);
+    status("লগইন সফল হয়েছে!");
+  } catch (error) {
+    console.error(error);
+    status("OTP যাচাই হয়নি। কোডটি পরীক্ষা করুন।");
+  }
+});
+
+// লগআউট
+$("logout")?.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+    status("লগআউট হয়েছে।");
+  } catch (error) {
+    status("লগআউট করা যায়নি।");
+  }
+});
+
+// Worker/Seller প্রোফাইল
+$("save-profile")?.addEventListener("click", async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      status("আগে লগইন করুন।");
+      return;
+    }
+
+    const role = $("role")?.value;
+    if (!["worker", "seller"].includes(role)) {
+      status("Worker অথবা Seller নির্বাচন করুন।");
+      return;
+    }
+
+    await setDoc(doc(db, "users", user.uid), {
+      phone: user.phoneNumber || "",
+      role: role,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    status("প্রোফাইল সেভ হয়েছে।");
+  } catch (error) {
+    console.error(error);
+    status("প্রোফাইল সেভ হয়নি: " + error.message);
+  }
+});
+
+// লগইন অবস্থা ও সংরক্ষিত প্রোফাইল
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    status("লগইন করা হয়নি।");
+    if ($("user-info")) $("user-info").textContent = "";
+    if ($("profile-card")) $("profile-card").hidden = true;
+    if ($("seller-card")) $("seller-card").hidden = true;
+    if ($("withdraw-card")) $("withdraw-card").hidden = true;
+    return;
+  }
+
+  if ($("user-info")) {
+    $("user-info").textContent = user.phoneNumber || "লগইন করা ব্যবহারকারী";
+  }
+  if ($("profile-card")) $("profile-card").hidden = false;
+  if ($("withdraw-card")) $("withdraw-card").hidden = false;
+
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    const role = snap.exists() ? snap.data().role : "worker";
+
+    if ($("role")) $("role").value = role;
+    if ($("seller-card")) $("seller-card").hidden = role !== "seller";
+
+    status("লগইন সফল হয়েছে।");
+  } catch (error) {
+    console.error(error);
+    status("লগইন হয়েছে, কিন্তু প্রোফাইল লোড হয়নি। Firestore সেটআপ পরীক্ষা করুন।");
+  }
+});import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+// Firebase Console-এর Config-এর মান এখানে বসান
+const firebaseConfig = {
+  apiKey: "AIzaSyBCVseWM_w34uv6iNFEz-hrLMFYX7NZsWQ",
+  authDomain: "ns-working-job.firebaseapp.com",
+  projectId: "ns-working-job",
+  storageBucket: "ns-working-job.firebasestorage.app",
+  messagingSenderId: "342517995479",
+  appId: "1:342517995479:web:6afae5016ee9b8241e5d92"
+};
+
+const app = initializeApp(firebaseConfig);
+console.log("NS WORKING JOB app.js loaded");
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = (id) => document.getElementById(id);
+
+let confirmationResult = null;
+let recaptchaVerifier = null;
+
+function status(message) {
+  if ($("auth-status")) $("auth-status").textContent = message;
+}
+
+
+async function setupRecaptcha() {
+  if (recaptchaVerifier) {
+    await recaptchaVerifier.clear();
+  }
+
+  recaptchaVerifier = new RecaptchaVerifier(
+    auth,
+    "recaptcha-container",
+    { size: "normal" }
+  );
+
+  await recaptchaVerifier.render();
+  return recaptchaVerifier;
+}
+// OTP পাঠানো
+$("send-code")?.addEventListener("click", async () => {
+  try {
+    const raw = $("phone")?.value.trim() || "";
+    let phone = raw.replace(/[\s()-]/g, "");
+
+    if (/^01\d{9}$/.test(phone)) phone = "+88" + phone;
+    if (!/^\+\d{10,15}$/.test(phone)) {
+      status("সঠিক ফোন নম্বর দিন। বাংলাদেশের নম্বর হলে 01 দিয়ে লিখুন।");
+      return;
+    }
+
+    status("reCAPTCHA যাচাই করুন...");
+    confirmationResult = await signInWithPhoneNumber(
+      auth,
+      phone,
+      await setupRecaptcha()
+    );
+
+    status("OTP পাঠানো হয়েছে। SMS-এর কোড লিখুন।");
+  } catch (error) {
+    console.error(error);
+    status("OTP পাঠানো যায়নি: " + error.message);
+    if (recaptchaVerifier) {
+      try { await recaptchaVerifier.clear(); } catch (_) {}
+      recaptchaVerifier = null;
+    }
+  }
+});
+
+// OTP যাচাই
+$("verify-code")?.addEventListener("click", async () => {
+  try {
+    if (!confirmationResult) {
+      status("আগে OTP পাঠান।");
+      return;
+    }
+
+    const code = $("otp")?.value.trim() || "";
+    if (!code) {
+      status("SMS-এ পাওয়া OTP লিখুন।");
+      return;
+    }
+
+    await confirmationResult.confirm(code);
+    status("লগইন সফল হয়েছে!");
+  } catch (error) {
+    console.error(error);
+    status("OTP যাচাই হয়নি। কোডটি পরীক্ষা করুন।");
+  }
+});
+
+// লগআউট
+$("logout")?.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+    status("লগআউট হয়েছে।");
+  } catch (error) {
+    status("লগআউট করা যায়নি।");
+  }
+});
+
+// Worker/Seller প্রোফাইল
+$("save-profile")?.addEventListener("click", async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      status("আগে লগইন করুন।");
+      return;
+    }
+
+    const role = $("role")?.value;
+    if (!["worker", "seller"].includes(role)) {
+      status("Worker অথবা Seller নির্বাচন করুন।");
+      return;
+    }
+
+    await setDoc(doc(db, "users", user.uid), {
+      phone: user.phoneNumber || "",
+      role: role,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    status("প্রোফাইল সেভ হয়েছে।");
+  } catch (error) {
+    console.error(error);
+    status("প্রোফাইল সেভ হয়নি: " + error.message);
+  }
+});
+
+// লগইন অবস্থা ও সংরক্ষিত প্রোফাইল
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    status("লগইন করা হয়নি।");
+    if ($("user-info")) $("user-info").textContent = "";
+    if ($("profile-card")) $("profile-card").hidden = true;
+    if ($("seller-card")) $("seller-card").hidden = true;
+    if ($("withdraw-card")) $("withdraw-card").hidden = true;
+    return;
+  }
+
+  if ($("user-info")) {
+    $("user-info").textContent = user.phoneNumber || "লগইন করা ব্যবহারকারী";
+  }
+  if ($("profile-card")) $("profile-card").hidden = false;
+  if ($("withdraw-card")) $("withdraw-card").hidden = false;
+
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    const role = snap.exists() ? snap.data().role : "worker";
+
+    if ($("role")) $("role").value = role;
+    if ($("seller-card")) $("seller-card").hidden = role !== "seller";
+
+    status("লগইন সফল হয়েছে।");
+  } catch (error) {
+    console.error(error);
+    status("লগইন হয়েছে, কিন্তু প্রোফাইল লোড হয়নি। Firestore সেটআপ পরীক্ষা করুন।");
+  }
+});
