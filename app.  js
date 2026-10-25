@@ -24,6 +24,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+console.log("NS WORKING JOB app.js loaded");
 const auth = getAuth(app);
 const db = getFirestore(app);
 
