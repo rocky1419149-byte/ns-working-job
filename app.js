@@ -48,6 +48,7 @@ async function setupRecaptcha() {
   return recaptchaVerifier;
 }
 // OTP পাঠানো
+alert("OTP বাটনের JavaScript চালু আছে!");
 $("send-code")?.addEventListener("click", async () => {
   try {
     const raw = $("phone")?.value.trim() || "";
