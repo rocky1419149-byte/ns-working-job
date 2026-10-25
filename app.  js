@@ -53,6 +53,7 @@ async function setupRecaptcha() {
   return recaptchaVerifier;
 }
 // OTP পাঠানো
+console.log("OTP BUTTON FOUND:", $("send-code"));
 $("send-code")?.addEventListener("click", async () => {
   try {
     const raw = $("phone")?.value.trim() || "";
