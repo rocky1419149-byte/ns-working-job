@@ -36,17 +36,21 @@ function status(message) {
   if ($("auth-status")) $("auth-status").textContent = message;
 }
 
-function setupRecaptcha() {
-  if (!recaptchaVerifier) {
-    recaptchaVerifier = new RecaptchaVerifier(
-      auth,
-      "recaptcha-container",
-      { size: "normal" }
-    );
+
+async function setupRecaptcha() {
+  if (recaptchaVerifier) {
+    await recaptchaVerifier.clear();
   }
+
+  recaptchaVerifier = new RecaptchaVerifier(
+    auth,
+    "recaptcha-container",
+    { size: "normal" }
+  );
+
+  await recaptchaVerifier.render();
   return recaptchaVerifier;
 }
-
 // OTP পাঠানো
 $("send-code")?.addEventListener("click", async () => {
   try {
@@ -63,7 +67,7 @@ $("send-code")?.addEventListener("click", async () => {
     confirmationResult = await signInWithPhoneNumber(
       auth,
       phone,
-      setupRecaptcha()
+      await setupRecaptcha()
     );
 
     status("OTP পাঠানো হয়েছে। SMS-এর কোড লিখুন।");
